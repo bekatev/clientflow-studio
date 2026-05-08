@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 function App() {
   const initialProjects = [
@@ -6,8 +6,23 @@ function App() {
     { id: 2, name: 'Creator Analytics Portal', status: 'In Progress', stack: 'React / Firebase', stars: 75 },
     { id: 3, name: 'E-commerce CRO Sprint', status: 'Planned', stack: 'React / Node', stars: 68 },
   ]
-  const [projects, setProjects] = useState(initialProjects)
+  const [projects, setProjects] = useState(() => {
+    const savedProjects = localStorage.getItem('clientflow-projects')
+    if (!savedProjects) return initialProjects
+
+    try {
+      const parsedProjects = JSON.parse(savedProjects)
+      return Array.isArray(parsedProjects) && parsedProjects.length > 0 ? parsedProjects : initialProjects
+    } catch {
+      return initialProjects
+    }
+  })
   const [form, setForm] = useState({ name: '', stack: '', status: 'Planned' })
+  const [formError, setFormError] = useState('')
+
+  useEffect(() => {
+    localStorage.setItem('clientflow-projects', JSON.stringify(projects))
+  }, [projects])
 
   const stats = useMemo(() => {
     const liveCount = projects.filter((project) => project.status === 'Live').length
@@ -21,7 +36,10 @@ function App() {
 
   const handleFormSubmit = (event) => {
     event.preventDefault()
-    if (!form.name.trim() || !form.stack.trim()) return
+    if (!form.name.trim() || !form.stack.trim()) {
+      setFormError('Project name and tech stack are required.')
+      return
+    }
 
     const nextProject = {
       id: Date.now(),
@@ -33,6 +51,16 @@ function App() {
 
     setProjects((prev) => [nextProject, ...prev])
     setForm({ name: '', stack: '', status: 'Planned' })
+    setFormError('')
+  }
+
+  const clearProjects = () => {
+    setProjects(initialProjects)
+    setFormError('')
+  }
+
+  const removeProject = (projectId) => {
+    setProjects((prev) => prev.filter((project) => project.id !== projectId))
   }
 
   const statusColor = {
@@ -60,31 +88,59 @@ function App() {
         <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6 lg:col-span-2">
           <div className="mb-5 flex items-center justify-between">
             <h2 className="text-xl font-semibold text-white">Project Pipeline</h2>
-            <span className="text-sm text-slate-400">{projects.length} total projects</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-slate-400">{projects.length} total projects</span>
+              <button
+                type="button"
+                onClick={clearProjects}
+                className="rounded-lg border border-slate-700 px-3 py-1 text-xs font-medium text-slate-300 transition hover:border-slate-500 hover:text-white"
+              >
+                Reset
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            {projects.map((project) => (
-              <article
-                key={project.id}
-                className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition hover:border-violet-500/50"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="font-medium text-white">{project.name}</h3>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${statusColor[project.status]}`}
-                  >
-                    {project.status}
-                  </span>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-300">
-                  <span>{project.stack}</span>
-                  <span className="text-slate-600">|</span>
-                  <span>Health score: {project.stars}</span>
-                </div>
-              </article>
-            ))}
-          </div>
+          {projects.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-700 bg-slate-950/30 p-8 text-center">
+              <p className="font-medium text-slate-200">No projects yet</p>
+              <p className="mt-2 text-sm text-slate-400">
+                Add your first case study to start tracking project health.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {projects.map((project) => (
+                <article
+                  key={project.id}
+                  className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 transition hover:border-violet-500/50"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h3 className="font-medium text-white">{project.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${statusColor[project.status]}`}
+                      >
+                        {project.status}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeProject(project.id)}
+                        className="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300 transition hover:border-rose-400/50 hover:text-rose-300"
+                        aria-label={`Remove ${project.name}`}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-300">
+                    <span>{project.stack}</span>
+                    <span className="text-slate-600">|</span>
+                    <span>Health score: {project.stars}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="space-y-6">
@@ -117,23 +173,27 @@ function App() {
                 placeholder="Project name"
                 value={form.name}
                 onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                aria-label="Project name"
               />
               <input
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none ring-violet-500 focus:ring"
                 placeholder="Tech stack"
                 value={form.stack}
                 onChange={(event) => setForm((prev) => ({ ...prev, stack: event.target.value }))}
+                aria-label="Tech stack"
               />
               <select
                 className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none ring-violet-500 focus:ring"
                 value={form.status}
                 onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value }))}
+                aria-label="Project status"
               >
                 <option>Planned</option>
                 <option>In Progress</option>
                 <option>Live</option>
               </select>
             </div>
+            {formError ? <p className="mt-3 text-sm text-rose-300">{formError}</p> : null}
             <button
               type="submit"
               className="mt-4 w-full rounded-lg bg-violet-500 px-4 py-2 font-medium text-white transition hover:bg-violet-400"
