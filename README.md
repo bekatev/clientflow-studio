@@ -1,7 +1,7 @@
-# ClientFlow Studio
+# ClientFlow Ops
 
-ClientFlow Studio is a frontend-heavy full-stack showcase project built with React + Tailwind + Vite.  
-It showcases project tracking, dashboard metrics, testimonial blocks, and a form-driven workflow that simulates product data entry.
+ClientFlow Ops is a delivery operations dashboard for teams managing multiple client projects.  
+It combines pipeline tracking, risk visibility, progress management, and portfolio-level metrics in one interface.
 
 ## Stack
 
@@ -36,8 +36,9 @@ npm run deploy
 
 4. In GitHub repo settings, ensure Pages is set to serve from `gh-pages` branch.
 
-## Showcase talking points
+## Key capabilities
 
-- Responsive dashboard UI for client and stakeholder demos
-- Form-based project pipeline to simulate real product flows
-- Production-ready deployment workflow with GitHub Pages
+- Pipeline board with status progression workflow
+- Search, filtering, and sorting across active projects
+- Risk, budget, and progress tracking with portfolio KPIs
+- Persistent local state for a stable operations workspace
